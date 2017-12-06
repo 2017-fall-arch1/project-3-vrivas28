@@ -20,7 +20,7 @@ u_char player01S = '0'; // player01 score counter
 u_char player02S = '0'; // player02 score counter
 
 AbRect paddle = {abRectGetBounds, abRectCheck, {4,14}}; /**< This is the dimensions for the players' paddle*/
-AbRect middleLine = {abRectGetBounds, abRectCheck, {screenHeight/2, 0}}; // horizontal line that divides the players cou.
+AbRect line = {abRectGetBounds, abRectCheck, {0, 61}}; // horizontal line that divides the players cou.
 AbRectOutline fieldOutline = {	/* playing field */
   abRectOutlineGetBounds, abRectOutlineCheck,   
   {screenWidth/2 - 10, screenHeight/2 - 10}
@@ -40,13 +40,20 @@ Layer fieldLayer = {		/* outline of the game field */
   COLOR_WHITE,
   &ballLa
 };
+Layer lineLa = {		/**< Layer with a horizontal line */
+  (AbShape *)&line,
+  {(screenWidth/2), (screenHeight/2)}, /**< Middle field divider */
+  {0,0}, {0,0},				    /* last & next pos */
+  COLOR_WHITE,
+  &fieldLayer,
+};
 
 Layer player01La = {		/**< Layer with a Player01 paddle */
   (AbShape *)&paddle,
   {screenWidth/2-48, screenHeight/2+48}, /**< center */
   {0,0}, {0,0},				    /* last & next pos */
   COLOR_RED,
-  &fieldLayer,
+  &lineLa,
 };
 Layer player02La = {		/**< Layer with a Player02 paddle */
   (AbShape *)&paddle,
@@ -54,13 +61,6 @@ Layer player02La = {		/**< Layer with a Player02 paddle */
   {0,0}, {0,0},				    /* last & next pos */
   COLOR_GREEN,
   &player01La,
-};
-Layer linela = {		/**< Layer with a horizontal line */
-  (AbShape *)&middleLine,
-  {(screenWidth/2 ), (screenHeight/2)}, /**< Middle field divider */
-  {0,0}, {0,0},				    /* last & next pos */
-  COLOR_WHITE,
-  &player02La,
 };
 
 /** Moving Layer
@@ -74,9 +74,9 @@ typedef struct MovLayer_s {
 } MovLayer;
 
 /* initial value of {0,0} will be overwritten */
-MovLayer mlball = {&ballLa, {2,4}, 0}; //moving layer for pong ball
-MovLayer ml1 = {&paddel01, {0,3}, 0}; // moving layer for player01's paddle
-MovLayer ml0 = {&paddle02, {0,3}, 0}; // moving layer for player02's paddle
+MovLayer ml3 = {&ballLa, {2,4}, 0}; //moving layer for pong ball
+MovLayer ml1 = {&player01La, {0,3}, 0}; // moving layer for player01's paddle
+MovLayer ml0 = {&player02La, {0,3}, 0}; // moving layer for player02's paddle
 
 void movLayerDraw(MovLayer *movLayers, Layer *layers)
 {
@@ -165,8 +165,8 @@ void main()
 
   shapeInit();
 
-  layerInit(&layer0);
-  layerDraw(&layer0);
+  layerInit(&player02La);
+  layerDraw(&player02La);
 
 
   layerGetBounds(&fieldLayer, &fieldFence);
@@ -183,7 +183,7 @@ void main()
     }
     P1OUT |= GREEN_LED;       /**< Green led on when CPU on */
     redrawScreen = 0;
-    movLayerDraw(&ml0, &layer0);
+    movLayerDraw(&ml0, &player02La);
   }
 }
 

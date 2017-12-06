@@ -13,6 +13,7 @@
 #include <p2switches.h>
 #include <shape.h>
 #include <abCircle.h>
+#include <buzzer.h>
 
 #define GREEN_LED BIT6
 
@@ -149,7 +150,7 @@ void mlAdvance(MovLayer *ml, Region *fence)
         else if((shapeBoundary.botRight.axes[0] > fence1->botRight.axes[0])){
             newPos.axes[0] = screenWidth/2;
             newPos.axes[1] = screenHeight/2;
-            player02S = player02S - 255; // updates player01 score
+            player02S = player02S - 255; // updates player02 score
             
         }
         //checking if ball touched the player01's paddle

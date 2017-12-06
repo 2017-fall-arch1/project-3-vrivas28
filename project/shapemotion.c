@@ -135,9 +135,35 @@ void mlAdvance(MovLayer *ml, Region *fence)
     for (axis = 0; axis < 2; axis ++) {
       if ((shapeBoundary.topLeft.axes[axis] < fence->topLeft.axes[axis]) ||
 	  (shapeBoundary.botRight.axes[axis] > fence->botRight.axes[axis]) ) {
-	int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
-	newPos.axes[axis] += (2*velocity);
-      }	/**< if outside of fence */
+        int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
+        newPos.axes[axis] += (2*velocity);
+        }
+        // checks if the ball touched the fence
+        else if((shapeBoundary.topLeft.axes[0] < fence1->topLeft.axes[0])){
+            newPos.axes[0] = screenWidth/2;
+            newPos.axes[1] = screenHeight/2;
+            player01S = player01S - 255;// updates player01 score
+           
+        }
+        // checks if the ball touched the fence
+        else if((shapeBoundary.botRight.axes[0] > fence1->botRight.axes[0])){
+            newPos.axes[0] = screenWidth/2;
+            newPos.axes[1] = screenHeight/2;
+            player02S = player02S - 255; // updates player01 score
+            
+        }
+        //checking if ball touched the player01's paddle
+        else if((abShapeCheck(ml1->layer->abShape, &ml1->layer->posNext, &ml->layer->posNext))){//square
+            velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
+            newPos.axes[axis] += (2*velocity);
+        }
+        //checking if ball touched the player02's paddle
+        else if((abShapeCheck(ml0->layer->abShape, &ml0->layer->posNext, &ml->layer->posNext))){//square
+            velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
+            newPos.axes[axis] += (2*velocity);
+        }
+        
+      /**< if outside of fence */
     } /**< for axis */
     ml->layer->posNext = newPos;
   } /**< for ml */

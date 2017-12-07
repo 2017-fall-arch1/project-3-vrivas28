@@ -13,15 +13,16 @@
 #include <p2switches.h>
 #include <shape.h>
 #include <abCircle.h>
-#include <buzzer.h>
-
+#include "buzzer.h"
 #define GREEN_LED BIT6
 
 u_char player01S = '0'; // player01 score counter
 u_char player02S = '0'; // player02 score counter
+int won = 0;
+int v = 0;
 
 AbRect paddle = {abRectGetBounds, abRectCheck, {4,14}}; /**< This is the dimensions for the players' paddle*/
-AbRect line = {abRectGetBounds, abRectCheck, {0, 61}}; // horizontal line that divides the players cou.
+AbRect line = {abRectGetBounds, abRectCheck, {0, 61}}; // vertical line that divides the players cou.
 AbRectOutline fieldOutline = {	/* playing field */
   abRectOutlineGetBounds, abRectOutlineCheck,   
   {screenWidth/2 - 10, screenHeight/2 - 10}
@@ -41,7 +42,7 @@ Layer fieldLayer = {		/* outline of the game field */
   COLOR_WHITE,
   &ballLa
 };
-Layer lineLa = {		/**< Layer with a horizontal line */
+Layer lineLa = {		/**< Layer with a vertical line */
   (AbShape *)&line,
   {(screenWidth/2), (screenHeight/2)}, /**< Middle field divider */
   {0,0}, {0,0},				    /* last & next pos */
@@ -125,7 +126,58 @@ void movLayerDraw(MovLayer *movLayers, Layer *layers)
  *  \param ml The moving shape to be advanced
  *  \param fence The region which will serve as a boundary for ml
  */
-void mlAdvance(MovLayer *ml, Region *fence)
+void mlAdvance(MovLayer *ml, Region *fence, MovLayer *ml0, MovLayer *ml3)
+{
+  Vec2 newPos;
+  u_char axis;
+  Region shapeBoundary;
+  int velocity;
+  for (; ml; ml = ml->next) {
+    vec2Add(&newPos, &ml->layer->posNext, &ml->velocity);
+    abShapeGetBounds(ml->layer->abShape, &newPos, &shapeBoundary);
+    for (axis = 0; axis < 2; axis ++) {
+      if ((shapeBoundary.topLeft.axes[axis] < fence->topLeft.axes[axis]) ||
+	  (shapeBoundary.botRight.axes[axis] > fence->botRight.axes[axis]) ) {
+        velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
+        newPos.axes[axis] += (2*velocity);
+        }
+        // checks if the ball touched the fence
+        else if((shapeBoundary.topLeft.axes[0] < fence->topLeft.axes[0])){
+            newPos.axes[0] = screenWidth/2;
+            newPos.axes[1] = screenHeight/2;
+            player01S = player01S - 255;// updates player01 score
+           
+        }
+        // checks if the ball touched the fence
+        else if((shapeBoundary.botRight.axes[0] > fence->botRight.axes[0])){
+            newPos.axes[0] = screenWidth/2;
+            newPos.axes[1] = screenHeight/2;
+            player02S = player02S - 255; // updates player02 score
+            
+        }
+        //checking if ball touched the player01's paddle
+        else if(abShapeCheck(ml3->layer->abShape, &ml3->layer->posNext, &ml->layer->posNext)){//square
+            int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
+            newPos.axes[axis] += (2*velocity);
+        }
+        //checking if ball touched the player02's paddle
+        else if(abShapeCheck(ml0->layer->abShape, &ml0->layer->posNext, &ml->layer->posNext)){//square
+            int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
+            newPos.axes[axis] += (2*velocity);
+        }
+        else{
+            if(player01S == '5' || player02S == '5')
+            {
+                won = 1;
+            }
+        }
+      /**< if outside of fence */
+    } /**< for axis */
+    ml->layer->posNext = newPos;
+  } /**< for ml */
+}
+// THE FOLLOWING TWO METHODS WERE REFERENCED FROM LAURA GONZALEZ
+void moveDown(MovLayer *ml, Region *fence)
 {
   Vec2 newPos;
   u_char axis;
@@ -133,43 +185,35 @@ void mlAdvance(MovLayer *ml, Region *fence)
   for (; ml; ml = ml->next) {
     vec2Add(&newPos, &ml->layer->posNext, &ml->velocity);
     abShapeGetBounds(ml->layer->abShape, &newPos, &shapeBoundary);
-    for (axis = 0; axis < 2; axis ++) {
+    for (axis = 1; axis < 2; axis ++) {
       if ((shapeBoundary.topLeft.axes[axis] < fence->topLeft.axes[axis]) ||
 	  (shapeBoundary.botRight.axes[axis] > fence->botRight.axes[axis]) ) {
-        int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
-        newPos.axes[axis] += (2*velocity);
-        }
-        // checks if the ball touched the fence
-        else if((shapeBoundary.topLeft.axes[0] < fence1->topLeft.axes[0])){
-            newPos.axes[0] = screenWidth/2;
-            newPos.axes[1] = screenHeight/2;
-            player01S = player01S - 255;// updates player01 score
-           
-        }
-        // checks if the ball touched the fence
-        else if((shapeBoundary.botRight.axes[0] > fence1->botRight.axes[0])){
-            newPos.axes[0] = screenWidth/2;
-            newPos.axes[1] = screenHeight/2;
-            player02S = player02S - 255; // updates player02 score
-            
-        }
-        //checking if ball touched the player01's paddle
-        else if((abShapeCheck(ml1->layer->abShape, &ml1->layer->posNext, &ml->layer->posNext))){//square
-            velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
-            newPos.axes[axis] += (2*velocity);
-        }
-        //checking if ball touched the player02's paddle
-        else if((abShapeCheck(ml0->layer->abShape, &ml0->layer->posNext, &ml->layer->posNext))){//square
-            velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
-            newPos.axes[axis] += (2*velocity);
-        }
-        
-      /**< if outside of fence */
+	int velocity = -ml->velocity.axes[axis];
+	newPos.axes[axis] += (2*velocity);
+      }	// this if statement handles when a collision happens in the fence
     } /**< for axis */
     ml->layer->posNext = newPos;
   } /**< for ml */
 }
 
+void moveUp(MovLayer *ml, Region *fence)
+{
+  Vec2 newPos;
+  u_char axis;
+  Region shapeBoundary;
+  for (; ml; ml = ml->next) {
+    vec2Sub(&newPos, &ml->layer->posNext, &ml->velocity);
+    abShapeGetBounds(ml->layer->abShape, &newPos, &shapeBoundary);
+    for (axis = 1; axis < 2; axis ++) {
+      if ((shapeBoundary.topLeft.axes[axis] < fence->topLeft.axes[axis]) ||
+	  (shapeBoundary.botRight.axes[axis] > fence->botRight.axes[axis]) ) {
+	int velocity = ml->velocity.axes[axis];
+	newPos.axes[axis] += (2*velocity);
+      }	// this if statement handles when a collision happens in the fence
+    } /**< for axis */
+    ml->layer->posNext = newPos;
+  } /**< for ml */
+}
 
 u_int bgColor = COLOR_BLACK;     /**< The background color */
 int redrawScreen = 1;           /**< Boolean for whether screen needs to be redrawn */
@@ -188,17 +232,13 @@ void main()
   configureClocks();
   lcd_init();
   shapeInit();
-  p2sw_init(1);
+  p2sw_init(15);
 
   shapeInit();
-
+  buzzer_init();
   layerInit(&player02La);
   layerDraw(&player02La);
-
-
   layerGetBounds(&fieldLayer, &fieldFence);
-
-
   enableWDTInterrupts();      /**< enable periodic interrupt */
   or_sr(0x8);	              /**< GIE (enable interrupts) */
 
@@ -211,6 +251,28 @@ void main()
     P1OUT |= GREEN_LED;       /**< Green led on when CPU on */
     redrawScreen = 0;
     movLayerDraw(&ml0, &player02La);
+    movLayerDraw(&ml1, &player02La);
+    movLayerDraw(&ml3, &player02La);
+    
+    u_int switches = p2sw_read();
+    drawString5x7(3, 152, "Player1:", COLOR_RED, COLOR_BLACK);
+    drawString5x7(72, 152, "Player2:", COLOR_GREEN, COLOR_BLACK);
+    drawChar5x7(52,152, player01S, COLOR_RED, COLOR_BLACK);
+    drawChar5x7(120,152, player02S, COLOR_GREEN, COLOR_BLACK);
+    drawString5x7(50, 0, "PONG", COLOR_BLUE, COLOR_BLACK);
+    
+    if(!(switches & (1<<0))){
+    	play(1);
+    }
+    if (!(switches & (1<<1))){
+    	play(2);
+    }
+    if (!(switches & (1<<2))){
+      play(1);
+    }
+    if (!(switches & (1<<3))){
+      play(2);
+    }
   }
 }
 
@@ -220,11 +282,33 @@ void wdt_c_handler()
   static short count = 0;
   P1OUT |= GREEN_LED;		      /**< Green LED on when cpu on */
   count ++;
+  u_int switches = p2sw_read();
   if (count == 15) {
-    mlAdvance(&ml0, &fieldFence);
-    if (p2sw_read())
+    if(won == 1)
+    {
+        if(player01S > player02S)
+        {
+            drawString5x7(20,60, "Player 1 Wins!!", COLOR_GREEN, COLOR_BLACK);}
+        else
+            drawString5x7(20,60, "Player 2 Wins!!", COLOR_GREEN, COLOR_BLACK);}
+    else 
+        mlAdvance(&ml3, &fieldFence, &ml1,&ml0);
+  
+    if(switches & (1<<0)){
+      moveUp(&ml1, &fieldFence);
+    }
+    if(switches & (1<<1)){
+      moveDown(&ml1, &fieldFence);
+    }
+    if(switches & (1<<2)){
+      moveUp(&ml0, &fieldFence);
+    }
+    if(switches & (1<<3)){
+      moveDown(&ml0, &fieldFence);
+    }
+  
       redrawScreen = 1;
     count = 0;
-  } 
+  }
   P1OUT &= ~GREEN_LED;		    /**< Green LED off when cpu off */
 }

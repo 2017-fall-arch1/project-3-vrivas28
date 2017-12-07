@@ -41,14 +41,14 @@ void play(char choice)
 }
 void playBn()
 {
-    temp = 1400;
+    temp = 140;
     buzzer_set_period(1975);
     while(++counter < temp){}
     counter = 0; 
 }
 void playCF()
 {
-    temp = 1400;
+    temp = 140;
     buzzer_set_period(1108);
     while(++counter < temp){}
     counter = 0; 
@@ -56,7 +56,7 @@ void playCF()
 
 void playE()
 {
-    temp = 1400;
+    temp = 140;
     buzzer_set_period(1318);
     while(++counter < temp){}
     counter = 0;
